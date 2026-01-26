@@ -20,7 +20,7 @@ uv run pytest tests/ --inline-snapshot=fix
 
 ## Structure
 
-- `test_display.py` - Tests for `run_with_display` (8 tests)
+- `test_display.py` - Tests for `run_in_jupyter` (8 tests)
   - Basic integration tests with TestModel
   - Display mocking tests to verify IPython.display calls
 - `test_views.py` - Tests for view components (ToolCallView, ErrorView, etc.)
@@ -38,7 +38,7 @@ async def test_basic_agent() -> None:
     model = TestModel()
     agent = Agent(model)
     
-    result = await run_with_display(agent, "Hello")
+    result = await run_in_jupyter(agent, "Hello")
     assert result is not None
     assert result.output == snapshot("success (no tool calls)")
 ```
@@ -59,7 +59,7 @@ First run with `--inline-snapshot=fix` to create snapshots. They'll be updated i
 
 ### Testing Display with Mocks
 
-To test that `run_with_display` properly displays views (see `test_display.py` for full examples):
+To test that `run_in_jupyter` properly displays views (see `test_display.py` for full examples):
 
 ```python
 from unittest.mock import patch
@@ -71,7 +71,7 @@ async def test_display_shows_markdown() -> None:
     
     # Mock display where it's used by views
     with patch("pydantic_ai_jupyter.models.display") as mock_display:
-        result = await run_with_display(agent, "Hello")
+        result = await run_in_jupyter(agent, "Hello")
         
         # Verify display was called
         assert mock_display.call_count > 0
@@ -94,14 +94,14 @@ See `test_display.py` for complete examples of both approaches.
 def get_weather(city: str) -> str:
     return f"The weather in {city} is sunny"
 
-result = await run_with_display(agent, "What's the weather in SF?")
+result = await run_in_jupyter(agent, "What's the weather in SF?")
 ```
 
 ### Testing Error Handling
 
 ```python
 with pytest.raises(ValueError, match="Tool failed"):
-    await run_with_display(agent, "Use the failing tool")
+    await run_in_jupyter(agent, "Use the failing tool")
 ```
 
 ## Configuration
@@ -119,7 +119,7 @@ target-version = "py310"
 
 ## Notes
 
-- All tests use async/await since `run_with_display` is async
+- All tests use async/await since `run_in_jupyter` is async
 - `pytestmark = pytest.mark.anyio` enables async test support
 - TestModel provides deterministic responses for testing
 - Snapshots commit with the code - they're part of the test

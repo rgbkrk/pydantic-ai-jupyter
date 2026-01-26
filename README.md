@@ -20,7 +20,7 @@ uv add pydantic-ai-jupyter
 
 ```python
 from pydantic_ai import Agent
-from pydantic_ai_jupyter import run_with_display
+from pydantic_ai_jupyter import run_in_jupyter
 
 agent = Agent("openai:gpt-4o-mini")
 
@@ -29,7 +29,7 @@ def get_weather(city: str) -> str:
     return f"Sunny, 22°C in {city}"
 
 # Run with rich display
-result = await run_with_display(agent, "What's the weather in Tokyo?")
+result = await run_in_jupyter(agent, "What's the weather in Tokyo?")
 ```
 
 ### Features
@@ -44,10 +44,10 @@ result = await run_with_display(agent, "What's the weather in Tokyo?")
 
 ```python
 # First turn
-result = await run_with_display(agent, "What's the weather in Tokyo?")
+result = await run_in_jupyter(agent, "What's the weather in Tokyo?")
 
 # Continue the conversation
-result = await run_with_display(
+result = await run_in_jupyter(
     agent,
     "What about London?",
     message_history=result.all_messages(),
@@ -59,7 +59,7 @@ result = await run_with_display(
 Enable debug mode to see all events:
 
 ```python
-result = await run_with_display(agent, "Hello!", debug=True)
+result = await run_in_jupyter(agent, "Hello!", debug=True)
 ```
 
 ## Supported providers
