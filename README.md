@@ -1,5 +1,7 @@
 # pydantic-ai-jupyter
 
+[![Tests](https://github.com/rgbkrk/pydantic-ai-jupyter/workflows/Tests/badge.svg)](https://github.com/rgbkrk/pydantic-ai-jupyter/actions)
+
 Experiment with [Pydantic AI](https://github.com/pydantic/pydantic-ai) Agents interactively in Jupyter notebooks.
 
 ## Installation

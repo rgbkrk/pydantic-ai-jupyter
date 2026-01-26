@@ -31,16 +31,10 @@ class ToolCallView(View):
 
     @classmethod
     def from_part(cls, part: ToolCallPart) -> ToolCallView:
-        return cls(
-            tool_name=part.tool_name, args=part.args, tool_call_id=part.tool_call_id
-        )
+        return cls(tool_name=part.tool_name, args=part.args, tool_call_id=part.tool_call_id)
 
     def render(self) -> str:
-        args_str = (
-            json.dumps(self.args, indent=2)
-            if isinstance(self.args, dict)
-            else str(self.args or "{}")
-        )
+        args_str = json.dumps(self.args, indent=2) if isinstance(self.args, dict) else str(self.args or "{}")
         return f"""
         <div style="border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; background: #eff6ff; border-radius: 4px;">
             <div style="font-weight: 600; color: #1d4ed8; margin-bottom: 4px;">
@@ -51,11 +45,7 @@ class ToolCallView(View):
         """
 
     def __repr__(self) -> str:
-        args_str = (
-            json.dumps(self.args)
-            if isinstance(self.args, dict)
-            else str(self.args or "{}")
-        )
+        args_str = json.dumps(self.args) if isinstance(self.args, dict) else str(self.args or "{}")
         if len(args_str) > 200:
             args_str = args_str[:200] + "..."
         return f"🔧 {self.tool_name}({args_str})"
@@ -80,11 +70,7 @@ class ToolResultView(View):
         )
 
     def render(self) -> str:
-        content_str = (
-            self.content
-            if isinstance(self.content, str)
-            else json.dumps(self.content, indent=2)
-        )
+        content_str = self.content if isinstance(self.content, str) else json.dumps(self.content, indent=2)
         if len(content_str) > self.max_length:
             content_str = content_str[: self.max_length] + "..."
 
@@ -108,11 +94,7 @@ class ToolResultView(View):
             """
 
     def __repr__(self) -> str:
-        content_str = (
-            self.content
-            if isinstance(self.content, str)
-            else json.dumps(self.content, indent=2)
-        )
+        content_str = self.content if isinstance(self.content, str) else json.dumps(self.content, indent=2)
         return f"✅ {self.tool_name} → {content_str}"
 
 
@@ -187,9 +169,7 @@ class ThinkingView(View):
         self.update()
 
     def __repr__(self) -> str:
-        preview = (
-            self.content[:100] + "..." if len(self.content) > 100 else self.content
-        )
+        preview = self.content[:100] + "..." if len(self.content) > 100 else self.content
         return f"💭 Thinking: {preview}"
 
 
@@ -212,11 +192,7 @@ class DebugEventView(View):
             part = event.part
             part_type = type(part).__name__
             if isinstance(part, TextPart):
-                preview = (
-                    part.content[:50] + "..."
-                    if len(part.content) > 50
-                    else part.content
-                )
+                preview = part.content[:50] + "..." if len(part.content) > 50 else part.content
                 summary = f"{part_type} completed"
                 details = f"Content: {preview}"
             elif isinstance(part, ThinkingPart):
@@ -236,9 +212,7 @@ class DebugEventView(View):
             part_type = type(part).__name__
             if isinstance(part, ToolCallPart):
                 summary = f"{part_type}: {part.tool_name}"
-                details = (
-                    part.args if isinstance(part.args, str) else json.dumps(part.args)
-                )
+                details = part.args if isinstance(part.args, str) else json.dumps(part.args)
             else:
                 summary = f"{part_type} starting"
                 details = None
@@ -275,17 +249,11 @@ class StreamingToolCallView(View):
 
     tool_name: str = Field(default="", description="The name of the tool being called.")
     args: str = Field(default="", description="The arguments being passed to the tool.")
-    tool_call_id: str | None = Field(
-        default=None, description="The ID of the tool call."
-    )
+    tool_call_id: str | None = Field(default=None, description="The ID of the tool call.")
 
     def render(self) -> str:
         args_escaped = escape(self.args)
-        cursor = (
-            '<span style="animation: blink 1s infinite;">▊</span>'
-            if not args_escaped.endswith("}")
-            else ""
-        )
+        cursor = '<span style="animation: blink 1s infinite;">▊</span>' if not args_escaped.endswith("}") else ""
         return f"""
         <style>@keyframes blink {{ 50% {{ opacity: 0; }} }}</style>
         <div style="border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; background: #eff6ff; border-radius: 4px;">
