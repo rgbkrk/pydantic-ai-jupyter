@@ -1,8 +1,8 @@
-"""Tests for run_with_display.
+"""Tests for run_in_jupyter.
 
 Basic Integration Tests:
 ------------------------
-Tests using TestModel to verify run_with_display works end-to-end.
+Tests using TestModel to verify run_in_jupyter works end-to-end.
 
 Display Mocking Tests:
 ---------------------
@@ -30,7 +30,7 @@ from inline_snapshot import snapshot
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
-from pydantic_ai_jupyter.display import run_with_display
+from pydantic_ai_jupyter.display import run_in_jupyter
 from pydantic_ai_jupyter.markdown import Markdown
 from pydantic_ai_jupyter.views import StreamingToolCallView, ToolResultView
 
@@ -41,19 +41,19 @@ pytestmark = pytest.mark.anyio
 # ========================
 
 
-async def test_run_with_display_basic() -> None:
-    """Basic test of run_with_display with TestModel."""
+async def test_run_in_jupyter_basic() -> None:
+    """Basic test of run_in_jupyter with TestModel."""
     model = TestModel()
     agent = Agent(model)
 
-    result = await run_with_display(agent, "Hello")
+    result = await run_in_jupyter(agent, "Hello")
 
     assert result is not None
     assert result.output == snapshot("success (no tool calls)")
 
 
-async def test_run_with_display_with_tool() -> None:
-    """Test run_with_display with a simple tool."""
+async def test_run_in_jupyter_with_tool() -> None:
+    """Test run_in_jupyter with a simple tool."""
     model = TestModel()
     agent = Agent(model)
 
@@ -62,14 +62,14 @@ async def test_run_with_display_with_tool() -> None:
         """Get the weather for a city."""
         return f"The weather in {city} is sunny"
 
-    result = await run_with_display(agent, "What is the weather in SF?")
+    result = await run_in_jupyter(agent, "What is the weather in SF?")
 
     assert result is not None
     assert result.output == snapshot('{"get_weather":"The weather in a is sunny"}')
 
 
-async def test_run_with_display_returns_none_on_exception() -> None:
-    """Test that run_with_display returns None when an exception occurs."""
+async def test_run_in_jupyter_returns_none_on_exception() -> None:
+    """Test that run_in_jupyter returns None when an exception occurs."""
     model = TestModel()
     agent = Agent(model)
 
@@ -81,7 +81,7 @@ async def test_run_with_display_returns_none_on_exception() -> None:
     # Note: This will raise since the exception is re-raised
     # but we're testing the error handling path
     with pytest.raises(ValueError, match="Tool failed"):
-        await run_with_display(agent, "Use the failing tool")
+        await run_in_jupyter(agent, "Use the failing tool")
 
 
 # Display Mocking Tests
@@ -89,14 +89,14 @@ async def test_run_with_display_returns_none_on_exception() -> None:
 
 
 async def test_display_is_called() -> None:
-    """Verify that display() is actually called during run_with_display."""
+    """Verify that display() is actually called during run_in_jupyter."""
     model = TestModel()
     agent = Agent(model)
 
     # Mock display in both places it's used
     with patch("pydantic_ai_jupyter.display.display") as mock_display_module:
         with patch("pydantic_ai_jupyter.models.display") as mock_models_display:
-            result = await run_with_display(agent, "Hello")
+            result = await run_in_jupyter(agent, "Hello")
 
             assert result is not None
 
@@ -111,7 +111,7 @@ async def test_display_shows_markdown() -> None:
     agent = Agent(model)
 
     with patch("pydantic_ai_jupyter.models.display") as mock_display:
-        result = await run_with_display(agent, "Hello")
+        result = await run_in_jupyter(agent, "Hello")
 
         assert result is not None
 
@@ -133,7 +133,7 @@ async def test_display_shows_tool_calls() -> None:
         return f"Sunny in {city}"
 
     with patch("pydantic_ai_jupyter.models.display") as mock_display:
-        result = await run_with_display(agent, "What's the weather?")
+        result = await run_in_jupyter(agent, "What's the weather?")
 
         assert result is not None
 
@@ -155,7 +155,7 @@ async def test_display_shows_tool_results() -> None:
         return x + y
 
     with patch("pydantic_ai_jupyter.display.display") as mock_display:
-        result = await run_with_display(agent, "Add 2 + 3")
+        result = await run_in_jupyter(agent, "Add 2 + 3")
 
         assert result is not None
 
@@ -172,7 +172,7 @@ async def test_display_has_display_ids() -> None:
     agent = Agent(model)
 
     with patch("pydantic_ai_jupyter.models.display") as mock_display:
-        await run_with_display(agent, "Hello")
+        await run_in_jupyter(agent, "Hello")
 
         # Every call should have display_id
         for i, call in enumerate(mock_display.call_args_list):
@@ -192,7 +192,7 @@ async def test_display_event_sequence_basic() -> None:
     agent = Agent(model)
 
     with patch("pydantic_ai_jupyter.models.display") as mock_display:
-        result = await run_with_display(agent, "Hello")
+        result = await run_in_jupyter(agent, "Hello")
 
         assert result is not None
 
@@ -237,7 +237,7 @@ async def test_display_event_sequence_with_tool() -> None:
 
     with patch("pydantic_ai_jupyter.models.display") as mock_models:
         with patch("pydantic_ai_jupyter.display.display") as mock_display:
-            result = await run_with_display(agent, "What's the weather?")
+            result = await run_in_jupyter(agent, "What's the weather?")
 
             assert result is not None
 

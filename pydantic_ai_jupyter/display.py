@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from pydantic_ai import Agent
 
 
-async def run_with_display(
+async def run_in_jupyter(
     agent: Agent[Any, Any],
     user_prompt: str | None = None,
     *,
@@ -57,16 +57,16 @@ async def run_with_display(
 
     Example:
         ```python
-        result = await run_with_display(agent, "What's the weather?")
+        result = await run_in_jupyter(agent, "What's the weather?")
 
         # Multi-turn conversation
-        result = await run_with_display(
+        result = await run_in_jupyter(
             agent, "What about London?",
             message_history=result.all_messages(),
         )
 
         # With dependencies and settings
-        result = await run_with_display(
+        result = await run_in_jupyter(
             agent, "Analyze this",
             deps=my_deps,
             model_settings={"temperature": 0.5},

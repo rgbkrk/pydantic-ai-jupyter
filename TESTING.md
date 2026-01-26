@@ -28,7 +28,7 @@ uv run ptw tests/
 
 ## Test Files
 
-- `tests/test_display.py` - Core `run_with_display` functionality with TestModel
+- `tests/test_display.py` - Core `run_in_jupyter` functionality with TestModel
 - `tests/test_views.py` - View components (ToolCallView, ErrorView, StreamingToolCallView, etc.)
 - `tests/test_markdown.py` - Markdown rendering and accumulation
 - `tests/README.md` - Detailed patterns and examples
@@ -43,7 +43,7 @@ from inline_snapshot import snapshot
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
-from pydantic_ai_jupyter.display import run_with_display
+from pydantic_ai_jupyter.display import run_in_jupyter
 
 pytestmark = pytest.mark.anyio
 
@@ -58,7 +58,7 @@ async def test_agent_with_tool() -> None:
         """Add two numbers."""
         return x + y
 
-    result = await run_with_display(agent, "What is 2 + 2?")
+    result = await run_in_jupyter(agent, "What is 2 + 2?")
 
     assert result is not None
     # Snapshot will be auto-generated on first run with --inline-snapshot=fix
@@ -112,7 +112,7 @@ assert md.content == snapshot("Hello World")
 ## Next Steps
 
 Consider adding tests for:
-- Different event types in `run_with_display`
+- Different event types in `run_in_jupyter`
 - Edge cases in views (very long content, special characters)
 - Different display modes (debug=True vs debug=False)
 - Message history handling
