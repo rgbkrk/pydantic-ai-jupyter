@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import traceback
+from html import escape
 from typing import Any
 
 from pydantic import Field
@@ -43,9 +44,9 @@ class ToolCallView(View):
         return f"""
         <div style="border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; background: #eff6ff; border-radius: 4px;">
             <div style="font-weight: 600; color: #1d4ed8; margin-bottom: 4px;">
-                🔧 <code style="background: #dbeafe; padding: 2px 6px; border-radius: 3px;">{self.tool_name}</code>
+                🔧 <code style="background: #dbeafe; padding: 2px 6px; border-radius: 3px;">{escape(self.tool_name)}</code>
             </div>
-            <pre style="margin: 0; font-size: 12px; background: #f8fafc; padding: 8px; border-radius: 3px; overflow-x: auto;">{args_str}</pre>
+            <pre style="margin: 0; font-size: 12px; background: #f8fafc; padding: 8px; border-radius: 3px; overflow-x: auto;">{escape(args_str)}</pre>
         </div>
         """
 
@@ -91,18 +92,18 @@ class ToolResultView(View):
             return f"""
             <div style="border-left: 3px solid #f59e0b; padding: 8px 12px; margin: 8px 0; background: #fffbeb; border-radius: 4px;">
                 <div style="font-weight: 600; color: #b45309; margin-bottom: 4px;">
-                    🔄 Retry: <code style="background: #fef3c7; padding: 2px 6px; border-radius: 3px;">{self.tool_name}</code>
+                    🔄 Retry: <code style="background: #fef3c7; padding: 2px 6px; border-radius: 3px;">{escape(self.tool_name)}</code>
                 </div>
-                <pre style="margin: 0; font-size: 12px; background: #fffdf5; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">{content_str}</pre>
+                <pre style="margin: 0; font-size: 12px; background: #fffdf5; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">{escape(content_str)}</pre>
             </div>
             """
         else:
             return f"""
             <div style="border-left: 3px solid #10b981; padding: 8px 12px; margin: 8px 0; background: #ecfdf5; border-radius: 4px;">
                 <div style="font-weight: 600; color: #047857; margin-bottom: 4px;">
-                    ✅ Result: <code style="background: #d1fae5; padding: 2px 6px; border-radius: 3px;">{self.tool_name}</code>
+                    ✅ Result: <code style="background: #d1fae5; padding: 2px 6px; border-radius: 3px;">{escape(self.tool_name)}</code>
                 </div>
-                <pre style="margin: 0; font-size: 12px; background: #f0fdf4; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">{content_str}</pre>
+                <pre style="margin: 0; font-size: 12px; background: #f0fdf4; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">{escape(content_str)}</pre>
             </div>
             """
 
@@ -133,13 +134,11 @@ class ErrorView(View):
     def render(self) -> str:
         details_html = ""
         if self.details:
-            escaped = (
-                self.details.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-            )
-            if len(escaped) > 1000:
-                escaped = escaped[-1000:]
+            details = self.details
+            if len(details) > 1000:
+                details = details[-1000:]
+            escaped = escape(details)
+
             details_html = f"""<details style="margin-top: 8px;">
                 <summary style="cursor: pointer; color: #991b1b;">Show traceback</summary>
                 <pre style="margin: 4px 0 0 0; font-size: 11px; background: #fef2f2; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">{escaped}</pre>
@@ -148,9 +147,9 @@ class ErrorView(View):
         return f"""
         <div style="border-left: 3px solid #dc2626; padding: 8px 12px; margin: 8px 0; background: #fef2f2; border-radius: 4px;">
             <div style="font-weight: 600; color: #dc2626; margin-bottom: 4px;">
-                ❌ <code style="background: #fee2e2; padding: 2px 6px; border-radius: 3px;">{self.error_type}</code>
+                ❌ <code style="background: #fee2e2; padding: 2px 6px; border-radius: 3px;">{escape(self.error_type)}</code>
             </div>
-            <div style="font-size: 13px; color: #7f1d1d;">{self.message}</div>
+            <div style="font-size: 13px; color: #7f1d1d;">{escape(self.message)}</div>
             {details_html}
         </div>
         """
@@ -169,9 +168,8 @@ class ThinkingView(View):
         self.content = content
 
     def render(self) -> str:
-        escaped = (
-            self.content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        )
+        escaped = escape(self.content)
+
         return f"""
         <details style="margin: 8px 0;" open>
             <summary style="cursor: pointer; font-weight: 600; color: #6b7280; font-size: 12px;">
@@ -259,19 +257,15 @@ class DebugEventView(View):
     def render(self) -> str:
         details_html = ""
         if self.details:
-            escaped = (
-                str(self.details)
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-            )
-            if len(escaped) > 100:
-                escaped = escaped[:100] + "..."
+            details = self.details
+            if len(details) > 100:
+                escaped = details[:100] + "..."
+            escaped = escape(details)
             details_html = f'<span style="color: #9ca3af;"> · {escaped}</span>'
 
         return f"""
         <div style="padding: 2px 8px; margin: 2px 0; font-size: 11px; color: #6b7280; font-family: monospace;">
-            ⚙️ <span style="color: #9ca3af;">{self.event_type}</span>: {self.summary}{details_html}
+            ⚙️ <span style="color: #9ca3af;">{self.event_type}</span>: {escape(self.summary)}{details_html}
         </div>
         """
 
@@ -286,9 +280,7 @@ class StreamingToolCallView(View):
     )
 
     def render(self) -> str:
-        args_escaped = (
-            self.args.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        )
+        args_escaped = escape(self.args)
         cursor = (
             '<span style="animation: blink 1s infinite;">▊</span>'
             if not args_escaped.endswith("}")
@@ -298,7 +290,7 @@ class StreamingToolCallView(View):
         <style>@keyframes blink {{ 50% {{ opacity: 0; }} }}</style>
         <div style="border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; background: #eff6ff; border-radius: 4px;">
             <div style="font-weight: 600; color: #1d4ed8; margin-bottom: 4px;">
-                🔧 <code style="background: #dbeafe; padding: 2px 6px; border-radius: 3px;">{self.tool_name}</code>
+                🔧 <code style="background: #dbeafe; padding: 2px 6px; border-radius: 3px;">{escape(self.tool_name)}</code>
             </div>
             <pre style="margin: 0; font-size: 12px; background: #f8fafc; padding: 8px; border-radius: 3px; overflow-x: auto;">{args_escaped}{cursor}</pre>
         </div>
