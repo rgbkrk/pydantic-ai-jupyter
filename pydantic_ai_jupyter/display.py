@@ -182,6 +182,6 @@ async def run_with_display(
         finish_markdown()
         finish_thinking()
         display(ErrorView.from_exception(e))
-        return None
+        raise
 
     return None

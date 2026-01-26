@@ -28,6 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "mypy >= 1.19.0",
     "python-dotenv>=1.0.0",
     "jupyter>=1.0.0",
 ]

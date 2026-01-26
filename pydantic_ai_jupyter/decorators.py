@@ -17,7 +17,7 @@ T = TypeVar("T")
 def renderable(cls: type[T], default: Literal["markdown", "html"] = "html") -> type[T]:
     """Decorate a class to make `render` functions the way to display in IPython"""
 
-    def _repr_mimebundle_(self, include=None, exclude=None):
+    def _repr_mimebundle_(self, include=None, exclude=None) -> dict[str, str | dict]:
         # Allow the user to pass back a string of HTML, a VDOM object, or other displayable
         rendered = self.render()
 
@@ -43,7 +43,6 @@ def renderable(cls: type[T], default: Literal["markdown", "html"] = "html") -> t
 
     setattr(cls, "_repr_mimebundle_", _repr_mimebundle_)
 
-    # WISH: I wish the resulting type could be something like `Type[T & Displayable]`
     return cls
 
 
