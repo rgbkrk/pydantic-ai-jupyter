@@ -8,7 +8,6 @@ from pydantic_ai_jupyter.views import (
     DebugEventView,
     ErrorView,
     StreamingToolCallView,
-    ThinkingView,
     ToolCallView,
     ToolResultView,
 )
