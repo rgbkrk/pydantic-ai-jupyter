@@ -14,7 +14,7 @@ classifiers = [
     "Framework :: Jupyter",
     "Framework :: Pydantic",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -28,6 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "mypy >= 1.19.0",
     "python-dotenv>=1.0.0",
     "jupyter>=1.0.0",
 ]

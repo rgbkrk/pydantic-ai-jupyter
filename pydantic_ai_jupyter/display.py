@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from IPython.display import display
+from pydantic_ai import AgentRunResult
 from pydantic_ai.messages import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
@@ -39,7 +40,7 @@ async def run_with_display(
     *,
     debug: bool = False,
     **kwargs: Any,
-) -> Any | None:
+) -> AgentRunResult[str] | None:
     """Run an agent with live Jupyter display of tool calls and streaming text.
 
     All arguments except `debug` are passed directly to `agent.run_stream_events()`.
@@ -106,53 +107,64 @@ async def run_with_display(
     try:
         async for event in agent.run_stream_events(user_prompt, **kwargs):
             # Handle streaming tool call parts (args streaming in)
-            if isinstance(event, PartStartEvent) and isinstance(event.part, ToolCallPart):
+            if isinstance(event, PartStartEvent) and isinstance(
+                event.part, ToolCallPart
+            ):
                 finish_markdown()
                 finish_thinking()
                 # Start a new streaming tool call view
                 view = StreamingToolCallView(
                     tool_name=event.part.tool_name,
-                    args=event.part.args if isinstance(event.part.args, str) else json.dumps(event.part.args),
+                    args=event.part.args
+                    if isinstance(event.part.args, str)
+                    else json.dumps(event.part.args),
                     tool_call_id=event.part.tool_call_id,
                 )
                 view.display()
-                view.update()  # Show initial state
+                view.update()
                 streaming_tool_calls[event.index] = view
 
-            elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, ToolCallPartDelta):
-                # Append to streaming tool call
+            elif isinstance(event, PartDeltaEvent) and isinstance(
+                event.delta, ToolCallPartDelta
+            ):
                 if event.index in streaming_tool_calls:
                     view = streaming_tool_calls[event.index]
                     if event.delta.args_delta:
-                        view.append_args(event.delta.args_delta)
+                        if isinstance(event.delta.args_delta, str):
+                            view.append_args(event.delta.args_delta)
+                        # TODO(rgbkrk): Determine if this dict is fully parsed JSON from the args at this point in the Pydantic AI Event Cycle
+                        else:  # dict[str, Any]
+                            view.append_args(json.dumps(event.delta.args_delta))
                     if event.delta.tool_name_delta:
                         view.append_tool_name(event.delta.tool_name_delta)
 
             elif isinstance(event, FunctionToolCallEvent):
-                # Tool call complete - streaming view already shown, just mark handled
-                # Clear the streaming view for this tool (it's now finalized)
                 pass
 
             elif isinstance(event, FunctionToolResultEvent):
                 display(ToolResultView.from_part(event.result))
 
-            # Handle thinking parts
-            elif isinstance(event, PartStartEvent) and isinstance(event.part, ThinkingPart):
+            elif isinstance(event, PartStartEvent) and isinstance(
+                event.part, ThinkingPart
+            ):
                 if event.part.content:
                     get_or_create_thinking().append(event.part.content)
 
-            elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, ThinkingPartDelta):
+            elif isinstance(event, PartDeltaEvent) and isinstance(
+                event.delta, ThinkingPartDelta
+            ):
                 if event.delta.content_delta:
                     get_or_create_thinking().append(event.delta.content_delta)
 
-            # Handle text parts
             elif isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
-                finish_thinking()  # Thinking done, now outputting text
-                finish_streaming_tool_calls()  # Clear tool call tracking
+                finish_thinking()
+                finish_streaming_tool_calls()
                 if event.part.content:
                     get_or_create_markdown().append(event.part.content)
 
-            elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+            elif isinstance(event, PartDeltaEvent) and isinstance(
+                event.delta, TextPartDelta
+            ):
                 if event.delta.content_delta:
                     get_or_create_markdown().append(event.delta.content_delta)
 
@@ -166,6 +178,7 @@ async def run_with_display(
         finish_markdown()
         finish_thinking()
         display(ErrorView.from_exception(e))
-        return None
+        raise
 
+    # Never got a result
     return None
