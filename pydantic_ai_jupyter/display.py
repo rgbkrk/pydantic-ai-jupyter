@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from IPython.display import display
+from pydantic_ai import AgentRunResult
 from pydantic_ai.messages import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
@@ -39,7 +40,7 @@ async def run_with_display(
     *,
     debug: bool = False,
     **kwargs: Any,
-) -> Any | None:
+) -> AgentRunResult[str] | None:
     """Run an agent with live Jupyter display of tool calls and streaming text.
 
     All arguments except `debug` are passed directly to `agent.run_stream_events()`.
@@ -120,13 +121,12 @@ async def run_with_display(
                     tool_call_id=event.part.tool_call_id,
                 )
                 view.display()
-                view.update()  # Show initial state
+                view.update()
                 streaming_tool_calls[event.index] = view
 
             elif isinstance(event, PartDeltaEvent) and isinstance(
                 event.delta, ToolCallPartDelta
             ):
-                # Append to streaming tool call
                 if event.index in streaming_tool_calls:
                     view = streaming_tool_calls[event.index]
                     if event.delta.args_delta:
@@ -139,14 +139,11 @@ async def run_with_display(
                         view.append_tool_name(event.delta.tool_name_delta)
 
             elif isinstance(event, FunctionToolCallEvent):
-                # Tool call complete - streaming view already shown, just mark handled
-                # Clear the streaming view for this tool (it's now finalized)
                 pass
 
             elif isinstance(event, FunctionToolResultEvent):
                 display(ToolResultView.from_part(event.result))
 
-            # Handle thinking parts
             elif isinstance(event, PartStartEvent) and isinstance(
                 event.part, ThinkingPart
             ):
@@ -159,10 +156,9 @@ async def run_with_display(
                 if event.delta.content_delta:
                     get_or_create_thinking().append(event.delta.content_delta)
 
-            # Handle text parts
             elif isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
-                finish_thinking()  # Thinking done, now outputting text
-                finish_streaming_tool_calls()  # Clear tool call tracking
+                finish_thinking()
+                finish_streaming_tool_calls()
                 if event.part.content:
                     get_or_create_markdown().append(event.part.content)
 
@@ -184,4 +180,5 @@ async def run_with_display(
         display(ErrorView.from_exception(e))
         raise
 
+    # Never got a result
     return None
