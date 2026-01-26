@@ -180,3 +180,150 @@ async def test_display_has_display_ids() -> None:
             assert "display_id" in kwargs, f"Call {i} missing display_id: {call}"
             assert isinstance(kwargs["display_id"], str)
             assert len(kwargs["display_id"]) > 0
+
+
+# Display Event Sequence Snapshot Tests
+# ======================================
+
+
+async def test_display_event_sequence_basic() -> None:
+    """Snapshot the sequence of display events for a basic agent run."""
+    model = TestModel()
+    agent = Agent(model)
+
+    with patch("pydantic_ai_jupyter.models.display") as mock_display:
+        result = await run_with_display(agent, "Hello")
+
+        assert result is not None
+
+        # Capture the sequence of display events
+        events = []
+        for call in mock_display.call_args_list:
+            view = call[0][0]
+            kwargs = call[1]
+            is_update = kwargs.get("update", False)
+
+            event = {
+                "type": type(view).__name__,
+                "update": is_update,
+            }
+
+            # Add relevant content based on view type
+            if isinstance(view, Markdown):
+                event["content"] = view.content
+
+            events.append(event)
+
+        assert events == snapshot(
+            [
+                {"type": "Markdown", "update": False, "content": "success (no tool calls)"},
+                {"type": "Markdown", "update": True, "content": "success (no tool calls)"},
+                {"type": "Markdown", "update": True, "content": "success (no tool calls)"},
+                {"type": "Markdown", "update": True, "content": "success (no tool calls)"},
+                {"type": "Markdown", "update": True, "content": "success (no tool calls)"},
+            ]
+        )
+
+
+async def test_display_event_sequence_with_tool() -> None:
+    """Snapshot the sequence of display events when using tools."""
+    model = TestModel()
+    agent = Agent(model)
+
+    @agent.tool_plain
+    def get_weather(city: str) -> str:
+        """Get weather."""
+        return f"Sunny in {city}"
+
+    with patch("pydantic_ai_jupyter.models.display") as mock_models:
+        with patch("pydantic_ai_jupyter.display.display") as mock_display:
+            result = await run_with_display(agent, "What's the weather?")
+
+            assert result is not None
+
+            # Capture events from both display sources
+            events = []
+
+            # Events from models.display (views with .display()/.update())
+            for call in mock_models.call_args_list:
+                view = call[0][0]
+                kwargs = call[1]
+                is_update = kwargs.get("update", False)
+
+                event = {
+                    "source": "models",
+                    "type": type(view).__name__,
+                    "update": is_update,
+                }
+
+                if isinstance(view, StreamingToolCallView):
+                    event["tool_name"] = view.tool_name
+                    event["args"] = view.args
+                elif isinstance(view, Markdown):
+                    event["content"] = view.content
+
+                events.append(event)
+
+            # Events from display.display (direct calls)
+            for call in mock_display.call_args_list:
+                view = call[0][0]
+
+                event = {
+                    "source": "display",
+                    "type": type(view).__name__,
+                }
+
+                if isinstance(view, ToolResultView):
+                    event["tool_name"] = view.tool_name
+                    event["content"] = str(view.content)
+
+                events.append(event)
+
+            assert events == snapshot(
+                [
+                    {
+                        "source": "models",
+                        "type": "StreamingToolCallView",
+                        "update": False,
+                        "tool_name": "get_weather",
+                        "args": '{"city": "a"}',
+                    },
+                    {
+                        "source": "models",
+                        "type": "StreamingToolCallView",
+                        "update": True,
+                        "tool_name": "get_weather",
+                        "args": '{"city": "a"}',
+                    },
+                    {
+                        "source": "models",
+                        "type": "Markdown",
+                        "update": False,
+                        "content": '{"get_weather":"Sunny in a"}',
+                    },
+                    {
+                        "source": "models",
+                        "type": "Markdown",
+                        "update": True,
+                        "content": '{"get_weather":"Sunny in a"}',
+                    },
+                    {
+                        "source": "models",
+                        "type": "Markdown",
+                        "update": True,
+                        "content": '{"get_weather":"Sunny in a"}',
+                    },
+                    {
+                        "source": "models",
+                        "type": "Markdown",
+                        "update": True,
+                        "content": '{"get_weather":"Sunny in a"}',
+                    },
+                    {
+                        "source": "display",
+                        "type": "ToolResultView",
+                        "tool_name": "get_weather",
+                        "content": "Sunny in a",
+                    },
+                ]
+            )
