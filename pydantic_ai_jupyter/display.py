@@ -130,7 +130,11 @@ async def run_with_display(
                 if event.index in streaming_tool_calls:
                     view = streaming_tool_calls[event.index]
                     if event.delta.args_delta:
-                        view.append_args(event.delta.args_delta)
+                        if isinstance(event.delta.args_delta, str):
+                            view.append_args(event.delta.args_delta)
+                        # TODO: Presumably this is a dict if it's fully parsed JSON already
+                        else:  # dict[str, Any]
+                            view.append_args(json.dumps(event.delta.args_delta))
                     if event.delta.tool_name_delta:
                         view.append_tool_name(event.delta.tool_name_delta)
 
