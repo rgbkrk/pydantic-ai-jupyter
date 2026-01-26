@@ -59,6 +59,7 @@ dev = [
 ]
 
 [tool.inline-snapshot]
+format-command = "ruff format"
 
 [tool.ruff]
 line-length = 120
