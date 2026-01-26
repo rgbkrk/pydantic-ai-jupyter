@@ -1,0 +1,44 @@
+[project]
+name = "pydantic-ai-jupyter"
+version = "0.1.0"
+description = "Experiment with Pydantic AI Agents in your notebooks."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [
+    { name = "Kyle Kelley", email = "rgbkrk@gmail.com" }
+]
+keywords = ["pydantic-ai", "jupyter", "notebook", "llm", "agents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Jupyter",
+    "Framework :: Pydantic",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "pydantic-ai>=0.1.0",
+    "ipython>=7.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "python-dotenv>=1.0.0",
+    "jupyter>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/rgbkrk/pydantic-ai-jupyter"
+Repository = "https://github.com/rgbkrk/pydantic-ai-jupyter"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pydantic_ai_jupyter"]
