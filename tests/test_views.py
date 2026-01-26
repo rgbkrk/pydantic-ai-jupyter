@@ -100,7 +100,7 @@ async def test_tool_result_view_truncates_long_content() -> None:
 
     html = view.render()
     assert "..." in html
-    assert len(html) < len(long_content) + 500  # Much shorter than full content
+    assert len(html) < len(long_content) + 500
 
 
 async def test_error_view_from_exception() -> None:
