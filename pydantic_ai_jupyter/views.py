@@ -6,7 +6,7 @@ import json
 import traceback
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from pydantic_ai.messages import (
     FinalResultEvent,
     PartEndEvent,
@@ -18,11 +18,9 @@ from pydantic_ai.messages import (
     ToolReturnPart,
 )
 
-from .decorators import renderable
 from .models import View
 
 
-@renderable
 class ToolCallView(View):
     """Renders a tool call with its arguments."""
 
@@ -62,7 +60,7 @@ class ToolCallView(View):
         return f"🔧 {self.tool_name}({args_str})"
 
 
-class ToolResultView(BaseModel):
+class ToolResultView(View):
     """Renders a tool result (success or retry)."""
 
     tool_name: str
@@ -117,7 +115,7 @@ class ToolResultView(BaseModel):
         return f"✅ {self.tool_name} → {content_str}"
 
 
-class ErrorView(BaseModel):
+class ErrorView(View):
     """Renders an exception with optional traceback."""
 
     error_type: str
