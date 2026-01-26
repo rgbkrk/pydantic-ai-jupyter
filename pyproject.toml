@@ -71,3 +71,4 @@ select = ["E", "F", "W", "I"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]  # Allow long lines in tests for HTML snapshots
 "pydantic_ai_jupyter/views.py" = ["E501"]  # Allow long lines for HTML templates in render methods
+"notebooks/*" = ["E402", "E501", "F811"]  # Notebooks: allow non-top imports, long lines, and redefinitions
