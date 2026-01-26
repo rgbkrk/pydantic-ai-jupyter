@@ -34,9 +34,15 @@ async def test_tool_call_view_render() -> None:
     view = ToolCallView(tool_name="calculate", args='{"x": 5, "y": 10}')
 
     html = view.render()
-    assert "calculate" in html
-    assert "x" in html
-    assert "5" in html
+    assert html == snapshot("""\
+
+        <div style="border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; background: #eff6ff; border-radius: 4px;">
+            <div style="font-weight: 600; color: #1d4ed8; margin-bottom: 4px;">
+                🔧 <code style="background: #dbeafe; padding: 2px 6px; border-radius: 3px;">calculate</code>
+            </div>
+            <pre style="margin: 0; font-size: 12px; background: #f8fafc; padding: 8px; border-radius: 3px; overflow-x: auto;">{&quot;x&quot;: 5, &quot;y&quot;: 10}</pre>
+        </div>
+        """)
 
 
 async def test_tool_call_view_repr() -> None:
@@ -55,6 +61,17 @@ async def test_tool_result_view_success() -> None:
     assert view.content == "Success data"
     assert view.is_retry is False
 
+    html = view.render()
+    assert html == snapshot("""\
+
+            <div style="border-left: 3px solid #10b981; padding: 8px 12px; margin: 8px 0; background: #ecfdf5; border-radius: 4px;">
+                <div style="font-weight: 600; color: #047857; margin-bottom: 4px;">
+                    ✅ Result: <code style="background: #d1fae5; padding: 2px 6px; border-radius: 3px;">get_data</code>
+                </div>
+                <pre style="margin: 0; font-size: 12px; background: #f0fdf4; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">Success data</pre>
+            </div>
+            """)
+
 
 async def test_tool_result_view_retry() -> None:
     """ToolResultView should handle retry prompts."""
@@ -63,6 +80,17 @@ async def test_tool_result_view_retry() -> None:
 
     assert view.tool_name == "failing_tool"
     assert view.is_retry is True
+
+    html = view.render()
+    assert html == snapshot("""\
+
+            <div style="border-left: 3px solid #f59e0b; padding: 8px 12px; margin: 8px 0; background: #fffbeb; border-radius: 4px;">
+                <div style="font-weight: 600; color: #b45309; margin-bottom: 4px;">
+                    🔄 Retry: <code style="background: #fef3c7; padding: 2px 6px; border-radius: 3px;">failing_tool</code>
+                </div>
+                <pre style="margin: 0; font-size: 12px; background: #fffdf5; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">Please try again</pre>
+            </div>
+            """)
 
 
 async def test_tool_result_view_truncates_long_content() -> None:
@@ -93,9 +121,19 @@ async def test_error_view_render() -> None:
     view = ErrorView(error_type="RuntimeError", message="Test error", details="Traceback here")
 
     html = view.render()
-    assert "RuntimeError" in html
-    assert "Test error" in html
-    assert "traceback" in html.lower()
+    assert html == snapshot("""\
+
+        <div style="border-left: 3px solid #dc2626; padding: 8px 12px; margin: 8px 0; background: #fef2f2; border-radius: 4px;">
+            <div style="font-weight: 600; color: #dc2626; margin-bottom: 4px;">
+                ❌ <code style="background: #fee2e2; padding: 2px 6px; border-radius: 3px;">RuntimeError</code>
+            </div>
+            <div style="font-size: 13px; color: #7f1d1d;">Test error</div>
+            <details style="margin-top: 8px;">
+                <summary style="cursor: pointer; color: #991b1b;">Show traceback</summary>
+                <pre style="margin: 4px 0 0 0; font-size: 11px; background: #fef2f2; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">Traceback here</pre>
+            </details>
+        </div>
+        """)
 
 
 async def test_streaming_tool_call_view_append_args() -> None:
@@ -123,5 +161,9 @@ async def test_debug_event_view_render() -> None:
     view = DebugEventView(event_type="PartStartEvent", summary="Text part starting", details="Content: Hello")
 
     html = view.render()
-    assert "PartStartEvent" in html
-    assert "Text part starting" in html
+    assert html == snapshot("""\
+
+        <div style="padding: 2px 8px; margin: 2px 0; font-size: 11px; color: #6b7280; font-family: monospace;">
+            ⚙️ <span style="color: #9ca3af;">PartStartEvent</span>: Text part starting<span style="color: #9ca3af;"> · Content: Hello</span>
+        </div>
+        """)
