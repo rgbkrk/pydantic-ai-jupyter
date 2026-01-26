@@ -20,7 +20,9 @@ uv run pytest tests/ --inline-snapshot=fix
 
 ## Structure
 
-- `test_display.py` - Tests for `run_with_display` using TestModel
+- `test_display.py` - Tests for `run_with_display` (8 tests)
+  - Basic integration tests with TestModel
+  - Display mocking tests to verify IPython.display calls
 - `test_views.py` - Tests for view components (ToolCallView, ErrorView, etc.)
 - `test_markdown.py` - Tests for Markdown rendering and streaming
 
@@ -54,6 +56,36 @@ async def test_output() -> None:
 ```
 
 First run with `--inline-snapshot=fix` to create snapshots. They'll be updated in your test files.
+
+### Testing Display with Mocks
+
+To test that `run_with_display` properly displays views (see `test_display.py` for full examples):
+
+```python
+from unittest.mock import patch
+
+async def test_display_shows_markdown() -> None:
+    """Test that Markdown views are displayed."""
+    model = TestModel()
+    agent = Agent(model)
+    
+    # Mock display where it's used by views
+    with patch("pydantic_ai_jupyter.models.display") as mock_display:
+        result = await run_with_display(agent, "Hello")
+        
+        # Verify display was called
+        assert mock_display.call_count > 0
+        
+        # Check what was displayed
+        from pydantic_ai_jupyter.markdown import Markdown
+        displayed_items = [call[0][0] for call in mock_display.call_args_list]
+        markdown_items = [item for item in displayed_items if isinstance(item, Markdown)]
+        assert len(markdown_items) > 0
+```
+
+**Key insight**: Mock `pydantic_ai_jupyter.models.display` to catch View.display()/update() calls,
+or `pydantic_ai_jupyter.display.display` for direct display() calls in display.py.
+See `test_display.py` for complete examples of both approaches.
 
 ### Testing Tools
 
@@ -91,3 +123,5 @@ target-version = "py310"
 - `pytestmark = pytest.mark.anyio` enables async test support
 - TestModel provides deterministic responses for testing
 - Snapshots commit with the code - they're part of the test
+- Mock IPython.display.display at the import location (models or display module)
+- Views use `.display()` and `.update()` methods which internally call IPython's display
