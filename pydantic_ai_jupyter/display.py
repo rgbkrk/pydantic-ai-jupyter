@@ -106,20 +106,26 @@ async def run_with_display(
     try:
         async for event in agent.run_stream_events(user_prompt, **kwargs):
             # Handle streaming tool call parts (args streaming in)
-            if isinstance(event, PartStartEvent) and isinstance(event.part, ToolCallPart):
+            if isinstance(event, PartStartEvent) and isinstance(
+                event.part, ToolCallPart
+            ):
                 finish_markdown()
                 finish_thinking()
                 # Start a new streaming tool call view
                 view = StreamingToolCallView(
                     tool_name=event.part.tool_name,
-                    args=event.part.args if isinstance(event.part.args, str) else json.dumps(event.part.args),
+                    args=event.part.args
+                    if isinstance(event.part.args, str)
+                    else json.dumps(event.part.args),
                     tool_call_id=event.part.tool_call_id,
                 )
                 view.display()
                 view.update()  # Show initial state
                 streaming_tool_calls[event.index] = view
 
-            elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, ToolCallPartDelta):
+            elif isinstance(event, PartDeltaEvent) and isinstance(
+                event.delta, ToolCallPartDelta
+            ):
                 # Append to streaming tool call
                 if event.index in streaming_tool_calls:
                     view = streaming_tool_calls[event.index]
@@ -137,11 +143,15 @@ async def run_with_display(
                 display(ToolResultView.from_part(event.result))
 
             # Handle thinking parts
-            elif isinstance(event, PartStartEvent) and isinstance(event.part, ThinkingPart):
+            elif isinstance(event, PartStartEvent) and isinstance(
+                event.part, ThinkingPart
+            ):
                 if event.part.content:
                     get_or_create_thinking().append(event.part.content)
 
-            elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, ThinkingPartDelta):
+            elif isinstance(event, PartDeltaEvent) and isinstance(
+                event.delta, ThinkingPartDelta
+            ):
                 if event.delta.content_delta:
                     get_or_create_thinking().append(event.delta.content_delta)
 
@@ -152,7 +162,9 @@ async def run_with_display(
                 if event.part.content:
                     get_or_create_markdown().append(event.part.content)
 
-            elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+            elif isinstance(event, PartDeltaEvent) and isinstance(
+                event.delta, TextPartDelta
+            ):
                 if event.delta.content_delta:
                     get_or_create_markdown().append(event.delta.content_delta)
 
