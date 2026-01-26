@@ -132,7 +132,7 @@ async def run_with_display(
                     if event.delta.args_delta:
                         if isinstance(event.delta.args_delta, str):
                             view.append_args(event.delta.args_delta)
-                        # TODO: Presumably this is a dict if it's fully parsed JSON already
+                        # TODO(rgbkrk): Determine if this dict is fully parsed JSON from the args at this point in the Pydantic AI Event Cycle
                         else:  # dict[str, Any]
                             view.append_args(json.dumps(event.delta.args_delta))
                     if event.delta.tool_name_delta:

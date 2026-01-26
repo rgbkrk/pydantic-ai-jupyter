@@ -56,7 +56,7 @@ from typing import Union
 from IPython.display import display
 from pydantic import BaseModel, Field
 
-from .decorators import auto_update, renderable
+from .decorators import renderable
 from .protocols import HTMLRepresentable, MarkdownRepresentable
 
 
@@ -117,36 +117,3 @@ class View(ABC, BaseModel):
                                            that can render itself as HTML.
         """
         ...
-
-
-@auto_update
-class AutoUpdate(View):
-    """
-    An extension of ViewModel that automatically updates its display whenever any of its
-    attributes change. This class is designed to facilitate the creation of reactive
-    interfaces in Jupyter notebooks or similar environments.
-
-    AutoViewModel leverages the Pydantic BaseModel for attribute validation and management.
-    Changes to attributes are detected, and the display is updated automatically to reflect
-    these changes without requiring explicit calls to the `update` method.
-
-    Usage:
-    Extend AutoViewModel to create custom view models with automatic display updating. This
-    is ideal for scenarios where the state of the view model is dynamic and changes in response
-    to user interaction or other events.
-
-    Example:
-        class CounterViewModel(AutoViewModel):
-            count: int = 0
-
-            def render(self) -> str:
-                return f"Current count: {self.count}"
-
-        counter = CounterViewModel()
-        counter.display()  # Initial display
-        counter.count += 1  # Display automatically updates
-
-    Note:
-    AutoViewModel only triggers updates for direct attribute changes. Nested changes, such as
-    modifications to items within a list attribute, may not automatically trigger an update.
-    """

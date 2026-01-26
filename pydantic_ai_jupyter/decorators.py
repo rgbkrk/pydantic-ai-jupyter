@@ -1,4 +1,3 @@
-from functools import wraps
 from typing import Any, Literal, TypeGuard, TypeVar
 
 from .protocols import HTMLRepresentable, MarkdownRepresentable
@@ -56,18 +55,3 @@ def markdown(cls: type[T]) -> type[T]:
 def html(cls: type[T]) -> type[T]:
     """Decorate a class to make `render` functions return rendered HTML in Jupyter"""
     return renderable(cls, default="html")
-
-
-def auto_update(cls):
-    """Decorate a class to make it automatically update when its attributes are set."""
-    original_setattr = cls.__setattr__
-
-    @wraps(original_setattr)
-    def __setattr__(self, name, value):
-        original_setattr(self, name, value)
-
-        if hasattr(self, "update") and name != "display_id":
-            self.update()
-
-    cls.__setattr__ = __setattr__
-    return cls
