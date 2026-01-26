@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import traceback
 import uuid
+from abc import ABC, abstractmethod
 from typing import Any
 
-from IPython.display import HTML as IPyHTML, display
+from IPython.display import HTML as IPyHTML
+from IPython.display import display
 from pydantic import BaseModel
 from pydantic_ai.messages import (
     FinalResultEvent,
@@ -20,7 +22,6 @@ from pydantic_ai.messages import (
     ToolReturnPart,
 )
 
-from abc import ABC, abstractmethod
 
 class AutoView(ABC):
     """An auto-updating view for use in visualizing pydantic-ai events in a Jupyter notebook.
@@ -38,12 +39,15 @@ class AutoView(ABC):
 
     def update(self) -> None:
         first_time = not self._displayed
-        display(self._display_content_(), display_id=self.display_id, update=not first_time)
+        display(
+            self._display_content_(), display_id=self.display_id, update=not first_time
+        )
         self._displayed = True
 
     @abstractmethod
     def _display_content_(self) -> str:
         raise NotImplementedError
+
 
 class ToolCallView(AutoView):
     """Renders a tool call with its arguments."""
@@ -53,17 +57,27 @@ class ToolCallView(AutoView):
     tool_call_id: str | None = None
 
     def __repr__(self) -> str:
-        args_str = json.dumps(self.args) if isinstance(self.args, dict) else str(self.args or "{}")
+        args_str = (
+            json.dumps(self.args)
+            if isinstance(self.args, dict)
+            else str(self.args or "{}")
+        )
         if len(args_str) > 200:
             args_str = args_str[:200] + "..."
         return f"🔧 {self.tool_name}({args_str})"
 
     @classmethod
     def from_part(cls, part: ToolCallPart) -> ToolCallView:
-        return cls(tool_name=part.tool_name, args=part.args, tool_call_id=part.tool_call_id)
+        return cls(
+            tool_name=part.tool_name, args=part.args, tool_call_id=part.tool_call_id
+        )
 
     def _repr_html_(self) -> str:
-        args_str = json.dumps(self.args, indent=2) if isinstance(self.args, dict) else str(self.args or "{}")
+        args_str = (
+            json.dumps(self.args, indent=2)
+            if isinstance(self.args, dict)
+            else str(self.args or "{}")
+        )
         return f"""
         <div style="border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; background: #eff6ff; border-radius: 4px;">
             <div style="font-weight: 600; color: #1d4ed8; margin-bottom: 4px;">
@@ -72,9 +86,13 @@ class ToolCallView(AutoView):
             <pre style="margin: 0; font-size: 12px; background: #f8fafc; padding: 8px; border-radius: 3px; overflow-x: auto;">{args_str}</pre>
         </div>
         """
-    
+
     def __repr__(self) -> str:
-        args_str = json.dumps(self.args, indent=2) if isinstance(self.args, dict) else str(self.args or "{}")
+        args_str = (
+            json.dumps(self.args, indent=2)
+            if isinstance(self.args, dict)
+            else str(self.args or "{}")
+        )
         return f"🔧 {self.tool_name}({args_str})"
 
 
@@ -88,7 +106,9 @@ class ToolResultView(BaseModel):
     max_length: int = 500
 
     def __repr__(self) -> str:
-        content_str = self.content if isinstance(self.content, str) else json.dumps(self.content)
+        content_str = (
+            self.content if isinstance(self.content, str) else json.dumps(self.content)
+        )
         if len(content_str) > 200:
             content_str = content_str[:200] + "..."
         prefix = "🔄 RETRY" if self.is_retry else "✅"
@@ -104,7 +124,11 @@ class ToolResultView(BaseModel):
         )
 
     def _repr_html_(self) -> str:
-        content_str = self.content if isinstance(self.content, str) else json.dumps(self.content, indent=2)
+        content_str = (
+            self.content
+            if isinstance(self.content, str)
+            else json.dumps(self.content, indent=2)
+        )
         if len(content_str) > self.max_length:
             content_str = content_str[: self.max_length] + "..."
 
@@ -126,10 +150,14 @@ class ToolResultView(BaseModel):
                 <pre style="margin: 0; font-size: 12px; background: #f0fdf4; padding: 8px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;">{content_str}</pre>
             </div>
             """
-    
+
     def __repr__(self) -> str:
-       content_str = self.content if isinstance(self.content, str) else json.dumps(self.content, indent=2) 
-       return f"✅ {self.tool_name} → {content_str}"
+        content_str = (
+            self.content
+            if isinstance(self.content, str)
+            else json.dumps(self.content, indent=2)
+        )
+        return f"✅ {self.tool_name} → {content_str}"
 
 
 class ErrorView(BaseModel):
@@ -153,7 +181,11 @@ class ErrorView(BaseModel):
     def _repr_html_(self) -> str:
         details_html = ""
         if self.details:
-            escaped = self.details.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            escaped = (
+                self.details.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+            )
             if len(escaped) > 1000:
                 escaped = escaped[-1000:]
             details_html = f"""<details style="margin-top: 8px;">
@@ -170,21 +202,24 @@ class ErrorView(BaseModel):
             {details_html}
         </div>
         """
-    
+
     def __repr__(self) -> str:
         return f"❌ {self.error_type}: {self.message}"
 
 
 class ThinkingView(AutoView):
     """A live-updating view for model thinking/reasoning content."""
+
     content: str
 
-    def __init__(self):
+    def __init__(self, content: str = ""):
         super().__init__()
-        self.content = ""
+        self.content = content
 
     def _display_content_(self) -> str:
-        escaped = self.content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        escaped = (
+            self.content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        )
         return IPyHTML(f"""
         <details style="margin: 8px 0;" open>
             <summary style="cursor: pointer; font-weight: 600; color: #6b7280; font-size: 12px;">
@@ -202,7 +237,9 @@ class ThinkingView(AutoView):
         self.update()
 
     def __repr__(self) -> str:
-        preview = self.content[:100] + "..." if len(self.content) > 100 else self.content
+        preview = (
+            self.content[:100] + "..." if len(self.content) > 100 else self.content
+        )
         return f"💭 Thinking: {preview}"
 
 
@@ -225,7 +262,11 @@ class DebugEventView(BaseModel):
             part = event.part
             part_type = type(part).__name__
             if isinstance(part, TextPart):
-                preview = part.content[:50] + "..." if len(part.content) > 50 else part.content
+                preview = (
+                    part.content[:50] + "..."
+                    if len(part.content) > 50
+                    else part.content
+                )
                 summary = f"{part_type} completed"
                 details = f"Content: {preview}"
             elif isinstance(part, ThinkingPart):
@@ -245,7 +286,9 @@ class DebugEventView(BaseModel):
             part_type = type(part).__name__
             if isinstance(part, ToolCallPart):
                 summary = f"{part_type}: {part.tool_name}"
-                details = part.args if isinstance(part.args, str) else json.dumps(part.args)
+                details = (
+                    part.args if isinstance(part.args, str) else json.dumps(part.args)
+                )
             else:
                 summary = f"{part_type} starting"
                 details = None
@@ -264,7 +307,12 @@ class DebugEventView(BaseModel):
     def _repr_html_(self) -> str:
         details_html = ""
         if self.details:
-            escaped = str(self.details).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            escaped = (
+                str(self.details)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+            )
             if len(escaped) > 100:
                 escaped = escaped[:100] + "..."
             details_html = f'<span style="color: #9ca3af;"> · {escaped}</span>'
@@ -279,14 +327,22 @@ class DebugEventView(BaseModel):
 class StreamingToolCallView(AutoView):
     """A live-updating view for tool call arguments as they stream in."""
 
-    def __init__(self, tool_name: str = "", args: str = "", tool_call_id: str | None = None):
+    def __init__(
+        self, tool_name: str = "", args: str = "", tool_call_id: str | None = None
+    ):
         self.tool_name = tool_name
         self.args = args
         self.tool_call_id = tool_call_id
 
     def _display_content_(self) -> str:
-        args_escaped = self.args.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        cursor = '<span style="animation: blink 1s infinite;">▊</span>' if not args_escaped.endswith("}") else ""
+        args_escaped = (
+            self.args.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        )
+        cursor = (
+            '<span style="animation: blink 1s infinite;">▊</span>'
+            if not args_escaped.endswith("}")
+            else ""
+        )
         return IPyHTML(f"""
         <style>@keyframes blink {{ 50% {{ opacity: 0; }} }}</style>
         <div style="border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 8px 0; background: #eff6ff; border-radius: 4px;">
@@ -296,7 +352,6 @@ class StreamingToolCallView(AutoView):
             <pre style="margin: 0; font-size: 12px; background: #f8fafc; padding: 8px; border-radius: 3px; overflow-x: auto;">{args_escaped}{cursor}</pre>
         </div>
         """)
-
 
     def append_args(self, delta: str) -> None:
         """Append to args and update the display."""
