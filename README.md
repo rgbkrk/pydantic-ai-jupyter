@@ -72,6 +72,25 @@ Tool call argument streaming works best with **OpenAI**, which streams arguments
 | Groq     | ✅ | ❌ (buffered) |
 | Ollama   | ✅ | ❌ (buffered) |
 
+## Development
+
+See [TESTING.md](TESTING.md) for testing guidelines and [PUBLISHING.md](PUBLISHING.md) for release instructions.
+
+```bash
+# Install dependencies
+uv sync --extra dev
+
+# Run tests
+uv run pytest tests/ -v
+
+# Run linting
+uv run ruff check .
+uv run ruff format .
+
+# Type checking
+uv run mypy pydantic_ai_jupyter/
+```
+
 ## License
 
 BSD 3-Clause
