@@ -7,7 +7,9 @@ import traceback
 from html import escape
 from typing import Any
 
-from pydantic import Field
+from partial_json_parser import loads as parse_partial_json
+from partial_json_parser.core.exceptions import MalformedJSON
+from pydantic import ConfigDict, Field
 from pydantic_ai.messages import (
     FinalResultEvent,
     PartEndEvent,
@@ -20,6 +22,18 @@ from pydantic_ai.messages import (
 )
 
 from .models import View
+from .tool_views import ToolView
+
+
+def _parse_partial_args(args: str) -> dict[str, Any] | str:
+    """Attempt to parse partial JSON args, returning the original string on failure."""
+    if not args or not args.strip():
+        return {}
+    try:
+        result = parse_partial_json(args)
+        return result if isinstance(result, dict) else {"_value": result}
+    except (MalformedJSON, json.JSONDecodeError):
+        return args
 
 
 class ToolCallView(View):
@@ -276,3 +290,131 @@ class StreamingToolCallView(View):
 
     def __repr__(self) -> str:
         return f"🔧 {self.tool_name}({self.args})"
+
+
+class CustomStreamingToolCallView(View):
+    """A streaming tool call view that delegates rendering to a ToolView.
+
+    This view is used by DisplayAgent to enable custom per-tool rendering
+    during streaming tool calls. When mark_complete() is called, it switches
+    to render using render_call instead of render_streaming_call.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    tool_name: str = Field(default="")
+    args: str = Field(default="")
+    tool_call_id: str | None = Field(default=None)
+    tool_view: ToolView | None = None
+    completed: bool = Field(default=False)
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.tool_view is None:
+            from .tool_views import DefaultToolView
+
+            object.__setattr__(self, "tool_view", DefaultToolView())
+
+    def render(self) -> str:
+        assert self.tool_view is not None
+        if self.completed:
+            # Parse args to dict for render_call - always a dict when complete
+            try:
+                args: dict[str, Any] = json.loads(self.args) if self.args else {}
+            except json.JSONDecodeError:
+                # Shouldn't happen with complete tool calls, but fallback gracefully
+                args = {"_raw": self.args}
+            return self.tool_view.render_call(
+                tool_name=self.tool_name,
+                args=args,
+                tool_call_id=self.tool_call_id,
+            )
+        # Parse partial JSON for streaming - gives dict even with incomplete JSON
+        parsed_args = _parse_partial_args(self.args)
+        return self.tool_view.render_streaming_call(
+            tool_name=self.tool_name,
+            args=parsed_args,
+            tool_call_id=self.tool_call_id,
+        )
+
+    def append_args(self, delta: str) -> None:
+        """Append to args and update the display."""
+        self.args += delta
+        self.update()
+
+    def append_tool_name(self, delta: str) -> None:
+        """Append to tool name and update the display."""
+        self.tool_name += delta
+        self.update()
+
+    def mark_complete(self) -> None:
+        """Mark the tool call as complete and update the display.
+
+        This switches rendering from render_streaming_call to render_call,
+        removing any streaming indicators like animations or cursors.
+        """
+        self.completed = True
+        self.update()
+
+    def __repr__(self) -> str:
+        return f"🔧 {self.tool_name}({self.args})"
+
+
+class CustomToolResultView(View):
+    """A tool result view that delegates rendering to a ToolView.
+
+    This view is used by DisplayAgent to enable custom per-tool rendering
+    for tool results.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    tool_name: str
+    content: Any
+    tool_call_id: str | None = None
+    is_retry: bool = False
+    tool_view: ToolView | None = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.tool_view is None:
+            from .tool_views import DefaultToolView
+
+            object.__setattr__(self, "tool_view", DefaultToolView())
+
+    @classmethod
+    def from_part(
+        cls,
+        part: ToolReturnPart | RetryPromptPart,
+        tool_view: ToolView | None = None,
+    ) -> CustomToolResultView:
+        """Create a CustomToolResultView from a pydantic-ai message part.
+
+        Args:
+            part: The ToolReturnPart or RetryPromptPart to render
+            tool_view: Optional ToolView for custom rendering
+
+        Returns:
+            A new CustomToolResultView instance
+        """
+        from .tool_views import DefaultToolView
+
+        return cls(
+            tool_name=part.tool_name or "unknown",
+            content=part.content if hasattr(part, "content") else str(part),
+            tool_call_id=part.tool_call_id,
+            is_retry=isinstance(part, RetryPromptPart),
+            tool_view=tool_view or DefaultToolView(),
+        )
+
+    def render(self) -> str:
+        assert self.tool_view is not None
+        return self.tool_view.render_result(
+            tool_name=self.tool_name,
+            content=self.content,
+            tool_call_id=self.tool_call_id,
+            is_retry=self.is_retry,
+        )
+
+    def __repr__(self) -> str:
+        content_str = self.content if isinstance(self.content, str) else json.dumps(self.content)
+        prefix = "🔄" if self.is_retry else "✅"
+        return f"{prefix} {self.tool_name} → {content_str}"
